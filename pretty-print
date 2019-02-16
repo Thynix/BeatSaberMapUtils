@@ -2,14 +2,25 @@
 import argparse
 import json
 
+info_filename = "info.json"
+
 parser = argparse.ArgumentParser()
-parser.add_argument('path')
+parser.add_argument('paths', nargs="*")
 args = parser.parse_args()
 
 # TODO: This m ight be a good script to use in a pre-commit/pre-add hook to format json.
 
-with open(args.path) as input_file:
-    pretty_printed = json.dumps(json.load(input_file), indent=4, sort_keys=True)
+if not args.paths:
+    with open(info_filename) as info_file:
+        info = json.load(info_file)
 
-with open(args.path, 'w') as output_file:
-    output_file.writelines(pretty_printed)
+    args.paths.append(info_filename)
+    for level in info["difficultyLevels"]:
+        args.paths.append(level["jsonPath"])
+
+for path in args.paths:
+    with open(path) as input_file:
+        pretty_printed = json.dumps(json.load(input_file), indent=4, sort_keys=True)
+
+    with open(path, 'w') as output_file:
+        output_file.writelines(pretty_printed)
