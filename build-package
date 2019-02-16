@@ -11,18 +11,22 @@ with open(info_filename) as info_file:
 # TODO: Prompt the user as a fallback if this fails.
 tag = subprocess.check_output(["git", "describe"]).decode("utf8").rstrip()
 zip_filename = "{info[songName]} - {info[songSubName]} {tag} by {info[authorName]}.zip".format(info=info, tag=tag)
+zip_directory = "{info[songName]} - {info[songSubName]}".format(info=info)
 
 with ZipFile(zip_filename, mode="x") as output_zip:
-    output_zip.write(info_filename)
-    output_zip.write(info["coverImagePath"])
+    def zip_add(filename):
+        output_zip.write(filename, "{}/{}".format(zip_directory, filename))
+
+    zip_add(info_filename)
+    zip_add(info["coverImagePath"])
 
     # Multiple difficulties may share an audio file; add each once to avoid zipfile
     # printing "UserWarning: Duplicate name" during normal operation.
     audio_paths = set()
     for level in info["difficultyLevels"]:
         audio_paths.add(level["audioPath"])
-        output_zip.write(level["jsonPath"])
+        zip_add(level["jsonPath"])
 
     for audio_path in audio_paths:
-        output_zip.write(audio_path)
+        zip_add(audio_path)
 
