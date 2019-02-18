@@ -1,0 +1,20 @@
+#!/usr/bin/env python3
+import argparse
+import json
+
+parser = argparse.ArgumentParser()
+parser.add_argument("from_path")
+parser.add_argument("to_path")
+parser.add_argument("section_name")
+args = parser.parse_args()
+
+with open(args.from_path) as from_file:
+    source = json.load(from_file)
+
+with open(args.to_path) as to_file:
+    destination = json.load(to_file)
+
+destination[args.section_name] = source[args.section_name]
+
+with open(args.to_path, "w") as to_file:
+    to_file.writelines(json.dumps(destination, indent=4, sort_keys=True))
