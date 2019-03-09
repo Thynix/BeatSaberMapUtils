@@ -57,10 +57,10 @@ note_counts = dict()
 
 for note in level["_notes"]:
     note_beat = note["_time"]
-    # Beat   Beats    1 minute
-    # ---- * ------ * ----------
-    #        Minute   60 seconds
-    note_second = math.floor(note_beat * bpm / 60)
+    # Beat   Minute   60 seconds
+    # ---- * ------ * ---------- = seconds
+    #        Beats    1 minute
+    note_second = math.floor(note_beat / bpm * 60)
     if note_second in note_counts:
         note_counts[note_second] += 1
     else:
@@ -127,11 +127,11 @@ plt.xlabel("Second")
 
 plt.suptitle("Note rate in {}".format(map_description))
 # TODO: Better formatted as something other than a title?
-plt.title("Overall average {:.1f}".format(sum(note_counts.values()) / duration))
+plt.title("Overall average {:.2f}".format(sum(note_counts.values()) / duration))
 
 dpi = 100
 # pixels   inch
-# ------ * ------
+# ------ * ------ = inches
 #          pixels
 width = 1920 / dpi
 height = 1080 / dpi
