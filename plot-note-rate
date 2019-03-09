@@ -5,6 +5,7 @@ import numpy as np
 import json
 import math
 import subprocess
+import tinytag
 
 parser = argparse.ArgumentParser()
 parser.add_argument("level")
@@ -23,10 +24,12 @@ with open(info_filename) as info_file:
 
 difficulties = list()
 levelPath = None
+duration = None
 for level in info["difficultyLevels"]:
     difficulty = level["difficulty"]
     if difficulty == args.level:
         levelPath = level["jsonPath"]
+        duration = math.floor(tinytag.TinyTag.get(level["audioPath"]).duration)
         break
 
     difficulties.append(difficulty)
@@ -36,6 +39,7 @@ else:
     exit(1)
 
 assert levelPath is not None
+assert duration is not None
 with open(levelPath) as levelFile:
     level = json.load(levelFile)
 
@@ -68,8 +72,6 @@ for note in level["_notes"]:
         note_counts[note_second] = 1
 
 # Iterate over windows of the requested length.
-# TODO: Get song duration from audio
-duration = max(note_counts.keys())
 note_rates = []
 for window_start in range(0, duration - args.window_duration):
     note_count = 0
