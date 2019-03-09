@@ -1,0 +1,139 @@
+#!/usr/bin/env python3
+import argparse
+import matplotlib.pyplot as plt
+import numpy as np
+import json
+import math
+import subprocess
+
+parser = argparse.ArgumentParser()
+parser.add_argument("level")
+parser.add_argument("--window-duration", default=10)
+args = parser.parse_args()
+
+if args.window_duration < 1:
+    print("Window duration must be positive.")
+    exit(1)
+
+info_filename = "info.json"
+
+with open(info_filename) as info_file:
+    info = json.load(info_file)
+
+difficulties = list()
+levelPath = None
+for level in info["difficultyLevels"]:
+    difficulty = level["difficulty"]
+    if difficulty == args.level:
+        levelPath = level["jsonPath"]
+        break
+
+    difficulties.append(difficulty)
+else:
+    print("Could not find difficulty level '{}'.".format(args.level))
+    print("Found these difficulties: {}".format(difficulties))
+    exit(1)
+
+assert levelPath is not None
+with open(levelPath) as levelFile:
+    level = json.load(levelFile)
+
+# TODO: This is shared with build-package; move to a module.
+try:
+    tag = subprocess.check_output(["git", "describe"]).decode("utf8").rstrip()
+except (subprocess.CalledProcessError, FileNotFoundError) as e:
+    print("Warning: failed to get description from git: {}".format(e))
+    tag = ""
+
+map_description = "{info[songName]} - {info[songSubName]} {difficulty} {tag} by {info[authorName]}".format(
+    info=info,
+    difficulty=args.level,
+    tag=tag,
+)
+bpm = int(level["_beatsPerMinute"])
+
+# Count of notes within each second.
+note_counts = dict()
+
+for note in level["_notes"]:
+    note_beat = note["_time"]
+    # Beat   Beats    1 minute
+    # ---- * ------ * ----------
+    #        Minute   60 seconds
+    note_second = math.floor(note_beat * bpm / 60)
+    if note_second in note_counts:
+        note_counts[note_second] += 1
+    else:
+        note_counts[note_second] = 1
+
+# Iterate over windows of the requested length.
+# TODO: Get song duration from audio
+duration = max(note_counts.keys())
+note_rates = []
+for window_start in range(0, duration - args.window_duration):
+    note_count = 0
+    for second in range(window_start, window_start + args.window_duration):
+        note_count += note_counts.get(second, 0)
+
+    note_rates.append(note_count / args.window_duration)
+
+plt.rcdefaults()
+
+plt.plot(note_rates)
+
+# OST notes per second as cited in Mediocre Mapper.
+reference_bounds = {
+    "Easy": ["0.9", "1.3"],
+    "Normal": ["1.4", "1.8"],
+    "Hard": ["1.8", "2.7"],
+    "Expert": ["2.4", "3.7"],
+}
+
+# Consolidate bounds to avoid overlapping labels.
+bound_labels = dict()
+
+
+def set_bound(bound, value):
+    if value not in bound_labels:
+        bound_labels[value] = list()
+
+    bound_labels[value].append(bound)
+
+
+for name, bounds in reference_bounds.items():
+    lower_bound, upper_bound = bounds
+
+    set_bound("Lower {}".format(name), lower_bound)
+    set_bound("Upper {}".format(name), upper_bound)
+
+# Precision of 0.1 matches that of reference bounds.
+y_ticks = np.arange(max(note_rates) + 0.1, step=0.1)
+y_labels = list()
+for tick in y_ticks:
+    tick_label = "{:.1f}".format(tick)
+    if tick_label in bound_labels:
+        y_labels.append("{} {}".format(bound_labels[tick_label], tick_label))
+    else:
+        y_labels.append(tick_label)
+
+plt.yticks(y_ticks, y_labels)
+plt.ylabel("Notes per second")
+
+# Add room for the long y axis labels.
+plt.subplots_adjust(left=0.2)
+
+# TODO: Format as duration?
+plt.xlabel("Second")
+
+plt.suptitle("Note rate in {}".format(map_description))
+# TODO: Better formatted as something other than a title?
+plt.title("Overall average {:.1f}".format(sum(note_counts.values()) / duration))
+
+dpi = 100
+# pixels   inch
+# ------ * ------
+#          pixels
+width = 1920 / dpi
+height = 1080 / dpi
+plt.gcf().set_size_inches(width, height)
+plt.savefig("Note rate for {}.png".format(map_description), dpi=dpi)
