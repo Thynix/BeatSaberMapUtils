@@ -6,6 +6,8 @@ import json
 import math
 import subprocess
 import tinytag
+import statistics
+import operator
 
 parser = argparse.ArgumentParser()
 parser.add_argument("level")
@@ -140,6 +142,13 @@ plt.xlabel("Time")
 plt.suptitle("Note rate in {}".format(map_description))
 # TODO: Better formatted as something other than a title?
 plt.title("Overall average {:.2f} notes per second".format(sum(note_counts.values()) / duration))
+
+median_rate = statistics.median(note_rates)
+plt.figtext(0.05, 0.9, "Median: {:.2f} n/s".format(median_rate))
+plt.figtext(0.05, 0.92, "Window duration {} seconds".format(args.window_duration))
+
+maximum_x, maximum_y = max(enumerate(note_rates), key=operator.itemgetter(1))
+plt.annotate("Max {:.2f} n/s".format(maximum_y), (maximum_x, maximum_y))
 
 dpi = 100
 # pixels   inch
