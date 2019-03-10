@@ -125,12 +125,21 @@ plt.ylabel("Notes per second")
 # Add room for the long y axis labels.
 plt.subplots_adjust(left=0.2)
 
-# TODO: Format as duration?
-plt.xlabel("Second")
+# Add 10 labels throughout the duration.
+x_ticks = np.arange(duration, step=duration / 10)
+x_labels = list()
+for tick in x_ticks:
+    x_labels.append("{min}:{sec:02}".format(
+        min=math.floor(tick // 60),
+        sec=int(tick % 60),
+    ))
+
+plt.xticks(x_ticks, x_labels)
+plt.xlabel("Time")
 
 plt.suptitle("Note rate in {}".format(map_description))
 # TODO: Better formatted as something other than a title?
-plt.title("Overall average {:.2f}".format(sum(note_counts.values()) / duration))
+plt.title("Overall average {:.2f} notes per second".format(sum(note_counts.values()) / duration))
 
 dpi = 100
 # pixels   inch
