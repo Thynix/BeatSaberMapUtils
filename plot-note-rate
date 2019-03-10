@@ -131,11 +131,17 @@ plt.subplots_adjust(left=0.2)
 # Add 10 labels throughout the duration.
 x_ticks = np.arange(duration, step=duration / 10)
 x_labels = list()
+
+
+def format_duration(seconds):
+    return "{min}:{sec:02}".format(
+        min=math.floor(seconds // 60),
+        sec=int(seconds % 60),
+    )
+
+
 for tick in x_ticks:
-    x_labels.append("{min}:{sec:02}".format(
-        min=math.floor(tick // 60),
-        sec=int(tick % 60),
-    ))
+    x_labels.append(format_duration(tick))
 
 plt.xticks(x_ticks, x_labels)
 plt.xlabel("Time")
@@ -149,7 +155,8 @@ plt.figtext(0.05, 0.9, "Median: {:.2f} n/s".format(median_rate))
 plt.figtext(0.05, 0.92, "Window duration {} seconds".format(args.window_duration))
 
 maximum_x, maximum_y = max(enumerate(note_rates), key=operator.itemgetter(1))
-plt.annotate("Max {:.2f} n/s".format(maximum_y), (maximum_x, maximum_y))
+plt.annotate("Max {:.2f} n/s at {}".format(maximum_y, format_duration(maximum_x)),
+             (maximum_x, maximum_y))
 
 dpi = 100
 # pixels   inch
