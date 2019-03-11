@@ -145,7 +145,7 @@ def get_window(data, start, window_duration):
 def get_all_windows(data):
     windows = []
     for window_start in np.arange(seconds_to_beats(offset / 1000), seconds_to_beats(duration) - window_duration + 0.0001): # Shift is needed so we fully count the last bars
-        windows.append(get_window(data, window_start, window_duration) / window_duration)
+        windows.append(get_window(data, window_start, window_duration) / beats_to_seconds(window_duration))
     return windows
 
 
