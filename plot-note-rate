@@ -11,13 +11,13 @@ import operator
 
 parser = argparse.ArgumentParser()
 parser.add_argument("level")
-parser.add_argument("--window-duration", type=int, default=10,
-                    help="Seconds of notes to include in each rate computation. Defaults to 10.")
+parser.add_argument("--window-beats", type=int, default=16,
+                    help="Number of beats worth of song to include in each rate computation. Defaults to 16.")
 parser.add_argument("filename", nargs="?", default=None)
 args = parser.parse_args()
 
-if args.window_duration < 1:
-    print("Window duration must be positive.")
+if args.window_beats < 1:
+    print("Window beat length must be positive.")
     exit(1)
 
 info_filename = "info.json"
@@ -60,15 +60,25 @@ map_description = "{info[songName]} - {info[songSubName]} {difficulty} {tag} by 
 )
 bpm = int(level["_beatsPerMinute"])
 
+
+def beats_to_seconds(beat_count):
+    # Beat   Minute   60 seconds
+    # ---- * ------ * ---------- = seconds
+    #        Beats    1 minute
+    return beat_count / bpm * 60
+
+
+# Notes counts are delimited by second, so fractional seconds cannot be used as bounds.
+window_duration = math.floor(beats_to_seconds(args.window_beats))
+if window_duration < 1:
+    print("Window of {} beats is too short at this BPM.".format(args.window_beats))
+    exit(1)
+
 # Count of notes within each second.
 note_counts = dict()
 
 for note in level["_notes"]:
-    note_beat = note["_time"]
-    # Beat   Minute   60 seconds
-    # ---- * ------ * ---------- = seconds
-    #        Beats    1 minute
-    note_second = math.floor(note_beat / bpm * 60)
+    note_second = math.floor(beats_to_seconds(note["_time"]))
     if note_second in note_counts:
         note_counts[note_second] += 1
     else:
@@ -76,12 +86,12 @@ for note in level["_notes"]:
 
 # Iterate over windows of the requested length.
 note_rates = []
-for window_start in range(0, duration - args.window_duration):
+for window_start in range(0, duration - window_duration):
     note_count = 0
-    for second in range(window_start, window_start + args.window_duration):
+    for second in range(window_start, window_start + window_duration):
         note_count += note_counts.get(second, 0)
 
-    note_rates.append(note_count / args.window_duration)
+    note_rates.append(note_count / window_duration)
 
 plt.rcdefaults()
 
@@ -152,7 +162,7 @@ plt.title("Overall average {:.2f} notes per second".format(sum(note_counts.value
 
 median_rate = statistics.median(note_rates)
 plt.figtext(0.05, 0.9, "Median: {:.2f} n/s".format(median_rate))
-plt.figtext(0.05, 0.92, "Window duration {} seconds".format(args.window_duration))
+plt.figtext(0.05, 0.92, "Window duration {} beats".format(args.window_beats))
 
 maximum_x, maximum_y = max(enumerate(note_rates), key=operator.itemgetter(1))
 plt.annotate("Max {:.2f} n/s at {}".format(maximum_y, format_duration(maximum_x)),
