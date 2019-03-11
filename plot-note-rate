@@ -32,10 +32,7 @@ for level in info["difficultyLevels"]:
     difficulty = level["difficulty"]
     if difficulty == args.level:
         levelPath = level["jsonPath"]
-        # Subtract audio starting offset milliseconds from song duration seconds.
-        duration = math.floor(
-            tinytag.TinyTag.get(level["audioPath"]).duration - (level["offset"] / 1000)
-        )
+        duration = math.floor(tinytag.TinyTag.get(level["audioPath"]).duration)
         break
 
     difficulties.append(difficulty)
