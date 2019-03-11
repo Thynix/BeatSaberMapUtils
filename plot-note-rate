@@ -28,11 +28,13 @@ with open(info_filename) as info_file:
 difficulties = list()
 levelPath = None
 duration = None
+offset = None
 for level in info["difficultyLevels"]:
     difficulty = level["difficulty"]
     if difficulty == args.level:
         levelPath = level["jsonPath"]
         duration = math.floor(tinytag.TinyTag.get(level["audioPath"]).duration)
+        offset = level["offset"]
         break
 
     difficulties.append(difficulty)
@@ -60,6 +62,7 @@ map_description = "{info[songName]} - {info[songSubName]} {difficulty} {tag} by 
 )
 bpm = int(level["_beatsPerMinute"])
 
+window_duration = args.window_beats
 
 def beats_to_seconds(beat_count):
     # Beat   Minute   60 seconds
@@ -67,31 +70,87 @@ def beats_to_seconds(beat_count):
     #        Beats    1 minute
     return beat_count / bpm * 60
 
+def seconds_to_beats(seconds):
+    # Beat   Minute   60 seconds
+    # ---- * ------ * ---------- = seconds
+    #        Beats    1 minute
+    return seconds / 60 * bpm
 
-# Notes counts are delimited by second, so fractional seconds cannot be used as bounds.
-window_duration = math.floor(beats_to_seconds(args.window_beats))
-if window_duration < 1:
-    print("Window of {} beats is too short at this BPM.".format(args.window_beats))
-    exit(1)
+# Get the position left/right - up/down position of a note.
+def get_pos(note):
+    return (note["_lineIndex"], note["_lineLayer"])
 
-# Count of notes within each second.
-note_counts = dict()
+# Get the normalized direction of a cut, given the cutDirection number
+def get_direction(cutDirection):
+    return [(0, 1),
+            (0, -1),
+            (-1, 0),
+            (1, 0),
+            (-1/math.sqrt(2), 1/math.sqrt(2)),
+            (1/math.sqrt(2), 1/math.sqrt(2)),
+            (-1/math.sqrt(2), -1/math.sqrt(2)),
+            (1/math.sqrt(2), -1/math.sqrt(2)),
+            (0, 0),
+            ][cutDirection]
 
-for note in level["_notes"]:
-    note_second = math.floor(beats_to_seconds(note["_time"]))
-    if note_second in note_counts:
-        note_counts[note_second] += 1
+# Get the distance between two coordinates
+def distance(a, b):
+    return math.sqrt(math.pow(a[0] - b[0], 2) + math.pow(a[1] - b[1], 2))
+
+# Get the position that is dist away from pos in the direction of cutDirection
+def move(pos, dist, cutDirection):
+    direction = get_direction(cutDirection)
+    return (pos[0] + direction[0] * dist, pos[1] + direction[1] * dist)
+
+# Track the movement of each hand (0 = left, 1 = right)
+def get_hand_movement(hand):
+    movement = []
+    if hand == 0:
+        last_pos = (1, 0) # The left hand starts here
     else:
-        note_counts[note_second] = 1
+        last_pos = (2, 0) # The right hand starts here
+    for note in sorted(level["_notes"], key=lambda x : x["_time"]):
+        if hand != note["_type"]:
+            continue
+        note_beat = note["_time"]
+        pos = get_pos(note)
+        before_pos = move(pos, -0.5, note["_cutDirection"]) # you have to start hitting before the block
+        after_pos = move(pos, 0.5, note["_cutDirection"]) # you have to end hitting after the block
 
-# Iterate over windows of the requested length.
-note_rates = []
-for window_start in range(0, duration - window_duration):
-    note_count = 0
-    for second in range(window_start, window_start + window_duration):
-        note_count += note_counts.get(second, 0)
+        moved = distance(last_pos, before_pos) + distance(before_pos, after_pos)
+        movement.append((note_beat, moved))
 
-    note_rates.append(note_count / window_duration)
+        last_pos = after_pos
+
+    return movement
+
+# Track where all the notes are
+def get_note_count():
+    counts = []
+    for note in level["_notes"]:
+        note_beat = note["_time"]
+        counts.append((note_beat, 1))
+
+    return counts
+
+# Sum all the values in data which are timestamped between start and start + window_duration
+def get_window(data, start, window_duration):
+    res = 0
+    for event in data:
+        if event[0] >= start and event[0] <= start + window_duration:
+            res += event[1]
+    return res
+
+# Get all the windows of the requested length starting at every bar (using the correct offset)
+def get_all_windows(data):
+    windows = []
+    for window_start in np.arange(seconds_to_beats(offset / 1000), seconds_to_beats(duration) - window_duration + 0.0001): # Shift is needed so we fully count the last bars
+        windows.append(get_window(data, window_start, window_duration) / window_duration)
+    return windows
+
+
+note_counts = get_note_count()
+note_rates = get_all_windows(note_counts)
 
 plt.rcdefaults()
 
@@ -139,11 +198,12 @@ plt.ylabel("Notes per second")
 plt.subplots_adjust(left=0.2)
 
 # Add 10 labels throughout the duration.
-x_ticks = np.arange(duration, step=duration / 10)
+x_ticks = np.arange(seconds_to_beats(offset / 1000), seconds_to_beats(duration) - window_duration + 0.0001, step=seconds_to_beats(duration) / 10)
 x_labels = list()
 
 
-def format_duration(seconds):
+def format_duration(beats):
+    seconds = beats_to_seconds(beats)
     return "{min}:{sec:02}".format(
         min=math.floor(seconds // 60),
         sec=int(seconds % 60),
@@ -158,7 +218,7 @@ plt.xlabel("Time")
 
 plt.suptitle("Note rate in {}".format(map_description))
 # TODO: Better formatted as something other than a title?
-plt.title("Overall average {:.2f} notes per second".format(sum(note_counts.values()) / duration))
+plt.title("Overall average {:.2f} notes per second".format(len(note_counts) / duration))
 
 median_rate = statistics.median(note_rates)
 plt.figtext(0.05, 0.9, "Median: {:.2f} n/s".format(median_rate))
