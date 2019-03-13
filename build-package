@@ -1,27 +1,21 @@
 #!/usr/bin/env python3
 from zipfile import ZipFile
-import json
-import subprocess
 
-info_filename = "info.json"
+from beat_saber_map_utils.load import Info
 
-with open(info_filename) as info_file:
-    info = json.load(info_file)
+info = Info()
 
-# TODO: Prompt the user as a fallback if this fails.
-tag = subprocess.check_output(["git", "describe"]).decode("utf8").rstrip()
-zip_filename = "{info[songName]} - {info[songSubName]} {tag} by {info[authorName]}.zip".format(info=info, tag=tag)
-zip_directory = "{info[songName]} - {info[songSubName]}".format(info=info)
-
-with ZipFile(zip_filename, mode="x") as output_zip:
+with ZipFile(info.revision_description + ".zip", mode="x") as output_zip:
+    # Add files within a directory named for the song to prevent a mess if
+    # extracted into the working directory.
     def zip_add(filename):
-        output_zip.write(filename, "{}/{}".format(zip_directory, filename))
+        output_zip.write(filename, "{}/{}".format(info.song_title, filename))
 
-    zip_add(info_filename)
+    zip_add(info.filename)
     zip_add(info["coverImagePath"])
 
-    # Multiple difficulties may share an audio file; add each once to avoid zipfile
-    # printing "UserWarning: Duplicate name" during normal operation.
+    # Multiple difficulties may share an audio file; add each once to avoid
+    # zipfile printing "UserWarning: Duplicate name" during normal operation.
     audio_paths = set()
     for level in info["difficultyLevels"]:
         audio_paths.add(level["audioPath"])
@@ -29,4 +23,3 @@ with ZipFile(zip_filename, mode="x") as output_zip:
 
     for audio_path in audio_paths:
         zip_add(audio_path)
-

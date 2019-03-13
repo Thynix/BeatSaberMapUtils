@@ -2,7 +2,7 @@
 import argparse
 import json
 
-info_filename = "info.json"
+from beat_saber_map_utils.load import Info
 
 parser = argparse.ArgumentParser()
 parser.add_argument('paths', nargs="*")
@@ -11,10 +11,9 @@ args = parser.parse_args()
 # TODO: This m ight be a good script to use in a pre-commit/pre-add hook to format json.
 
 if not args.paths:
-    with open(info_filename) as info_file:
-        info = json.load(info_file)
+    info = Info()
 
-    args.paths.append(info_filename)
+    args.paths.append(info.filename)
     for level in info["difficultyLevels"]:
         args.paths.append(level["jsonPath"])
 
