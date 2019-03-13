@@ -48,7 +48,9 @@ class Info:
             # If both tag and suffix are specified, separate them by a space.
             if song_suffix and song_suffix[-1] != " ":
                 song_suffix += " "
-        except subprocess.CalledProcessError:
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            # Git might not be installed, or for instance if the map isn't part
+            # of a git repository it may fail.
             tag = " "
 
         return "{info[songName]} - {info[songSubName]} {suffix}{tag}by {info[authorName]}".format(

@@ -1,6 +1,6 @@
 # Beat Saber Map Utilities
 
-I made these because they solved problems I had while making Beat Saber maps. Some of them assume the map is using git.
+I made these because they solved problems I had while making Beat Saber maps.
 
 Requires Python 3, and uses [`pipenv`](https://pipenv.readthedocs.io/en/latest/) for dependencies. Run `pipenv install` to install them.
 
