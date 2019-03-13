@@ -1,4 +1,4 @@
-# Beat Saber Utilities
+# Beat Saber Map Utilities
 
 I made these because they solved problems I had while making Beat Saber maps. Some of them assume the map is using git.
 
