@@ -64,11 +64,13 @@ bpm = int(level["_beatsPerMinute"])
 
 window_duration = args.window_beats
 
+
 def beats_to_seconds(beat_count):
     # Beat   Minute   60 seconds
     # ---- * ------ * ---------- = seconds
     #        Beats    1 minute
     return beat_count / bpm * 60
+
 
 def seconds_to_beats(seconds):
     # Beat   Minute   60 seconds
@@ -76,9 +78,11 @@ def seconds_to_beats(seconds):
     #        Beats    1 minute
     return seconds / 60 * bpm
 
+
 # Get the position left/right - up/down position of a note.
 def get_pos(note):
     return (note["_lineIndex"], note["_lineLayer"])
+
 
 # Get the normalized direction of a cut, given the cutDirection number
 def get_direction(cutDirection):
@@ -93,14 +97,17 @@ def get_direction(cutDirection):
             (0, 0),
             ][cutDirection]
 
+
 # Get the distance between two coordinates
 def distance(a, b):
     return math.sqrt(math.pow(a[0] - b[0], 2) + math.pow(a[1] - b[1], 2))
+
 
 # Get the position that is dist away from pos in the direction of cutDirection
 def move(pos, dist, cutDirection):
     direction = get_direction(cutDirection)
     return (pos[0] + direction[0] * dist, pos[1] + direction[1] * dist)
+
 
 # Track the movement of each hand (0 = left, 1 = right)
 def get_hand_movement(hand):
@@ -124,6 +131,7 @@ def get_hand_movement(hand):
 
     return movement
 
+
 # Track where all the notes are
 def get_note_count():
     counts = []
@@ -133,6 +141,7 @@ def get_note_count():
 
     return counts
 
+
 # Sum all the values in data which are timestamped between start and start + window_duration
 def get_window(data, start, window_duration):
     res = 0
@@ -140,6 +149,7 @@ def get_window(data, start, window_duration):
         if event[0] >= start and event[0] <= start + window_duration:
             res += event[1]
     return res
+
 
 # Get all the windows of the requested length starting at every bar (using the correct offset)
 def get_all_windows(data):
