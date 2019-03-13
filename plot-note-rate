@@ -66,16 +66,16 @@ window_duration = args.window_beats
 
 
 def beats_to_seconds(beat_count):
-    # Beat   Minute   60 seconds
-    # ---- * ------ * ---------- = seconds
-    #        Beats    1 minute
+    # Beats   Minute   60 seconds
+    # ----- * ------ * ---------- = seconds
+    #         Beats    1 minute
     return beat_count / bpm * 60
 
 
 def seconds_to_beats(seconds):
-    # Beat   Minute   60 seconds
-    # ---- * ------ * ---------- = seconds
-    #        Beats    1 minute
+    # Seconds   1 minute     Beats
+    # ------- * ---------- * ------ = beats
+    #           60 seconds   Minute
     return seconds / 60 * bpm
 
 
