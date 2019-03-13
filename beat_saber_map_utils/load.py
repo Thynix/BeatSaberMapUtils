@@ -33,7 +33,7 @@ class Info:
     def revision_description(self):
         """
         A description including the song name and authorship fields and the
-        output of `git describe` if available.
+        output of `git describe --dirty` if available.
         """
         return self._describe()
 
@@ -42,7 +42,7 @@ class Info:
             song_suffix = ""
 
         try:
-            describe_bytes = subprocess.check_output(["git", "describe"])
+            describe_bytes = subprocess.check_output(["git", "describe", "--dirty"])
             tag = describe_bytes.decode("utf8").rstrip() + " "
 
             # If both tag and suffix are specified, separate them by a space.
@@ -57,7 +57,7 @@ class Info:
     def get_difficulty_description(self, difficulty):
         """
         :return: A description song including the name and authorship fields,
-        the difficulty, and the output of `git describe` if available.
+        the difficulty, and the output of `git describe --dirty` if available.
         """
         return self._describe(difficulty)
 
