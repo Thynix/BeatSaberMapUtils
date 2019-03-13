@@ -5,10 +5,10 @@ import json
 from beat_saber_map_utils.load import Info
 
 parser = argparse.ArgumentParser()
-parser.add_argument('paths', nargs="*")
+parser.add_argument("--fail-on-change", action="store_true",
+                    help="If specified, exit with the number of file that differ.")
+parser.add_argument("paths", nargs="*")
 args = parser.parse_args()
-
-# TODO: This m ight be a good script to use in a pre-commit/pre-add hook to format json.
 
 if not args.paths:
     info = Info()
@@ -17,9 +17,20 @@ if not args.paths:
     for level in info["difficultyLevels"]:
         args.paths.append(level["jsonPath"])
 
+changed_count = 0
 for path in args.paths:
     with open(path) as input_file:
-        pretty_printed = json.dumps(json.load(input_file), indent=4, sort_keys=True)
+        original_contents = input_file.read()
+
+    pretty_printed = json.dumps(json.loads(original_contents), indent=4, sort_keys=True)
 
     with open(path, 'w') as output_file:
         output_file.writelines(pretty_printed)
+
+    if original_contents != pretty_printed:
+        changed_count += 1
+
+if args.fail_on_change:
+    # An exit value greater than 255 returns an exit code modulo 256.
+    # See https://www.tldp.org/LDP/abs/html/exitcodes.html
+    exit(min(changed_count, 255))

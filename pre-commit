@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# Assuming this directory is on the PATH, this prevents committing files that
+# are not pretty-printed.
+if ! pretty-print --fail-on-change
+then
+    echo "Map was not pretty-printed; try adding the changes and committing again."
+    exit 1
+fi
