@@ -64,6 +64,6 @@ class Info:
         return self._describe(difficulty)
 
     @property
-    def song_title(self):
+    def map_title(self):
         """Song name and sub-name."""
         return "{info[songName]} - {info[songSubName]}".format(info=self)

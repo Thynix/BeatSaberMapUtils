@@ -8,11 +8,11 @@ info = Info()
 
 
 def zip_filename(filename):
-    return "{}/{}".format(info.song_title, filename)
+    return "{}/{}".format(info.map_title, filename)
 
 
 with ZipFile(info.revision_description + ".zip", mode="x") as output_zip:
-    # Add files within a directory named for the song to prevent a mess if
+    # Add files within a directory named for the map to prevent a mess if
     # extracted into the working directory.
     def zip_add(filename):
         output_zip.write(filename, zip_filename(filename))
