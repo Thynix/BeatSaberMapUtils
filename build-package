@@ -21,7 +21,8 @@ with ZipFile(info.revision_description + ".zip", mode="x") as output_zip:
     def zip_add_json(filename):
         contents = json.load(open(filename))
         output_zip.writestr(zip_filename(filename),
-                            json.dumps(contents, separators=(',', ':')))
+                            json.dumps(contents, separators=(',', ':'),
+                                       sort_keys=True))
 
     zip_add_json(info.filename)
     zip_add(info["coverImagePath"])
