@@ -4,9 +4,10 @@ import subprocess
 
 class Info:
 
-    DefaultFilename = "info.json"
+    def __init__(self, filename=None):
+        if filename is None:
+            filename = "info.json"
 
-    def __init__(self, filename=DefaultFilename):
         self.filename = filename
 
         with open(filename) as info_file:
